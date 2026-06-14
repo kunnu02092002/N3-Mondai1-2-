@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JLPT N3 Kanji Practice</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Segoe UI', system-ui, sans-serif;
+    background: #0f0f1a;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .app {
+    width: 100%;
+    max-width: 720px;
+    padding: 24px;
+    margin: 0 auto;
+  }
+
+  /* Header & Tabs */
+  .header { text-align: center; margin-bottom: 24px; }
+  .header h1 {
+    font-size: 22px; font-weight: 700;
+    background: linear-gradient(135deg, #fdcb6e, #e17055);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 4px;
+  }
+  .header p { font-size: 13px; color: #888; }
+  .tabs {
+    display: flex; gap: 8px;
+    background: #1a1a2e;
+    padding: 4px; border-radius: 12px; margin-bottom: 20px;
+  }
+  .tab {
+    flex: 1; padding: 10px 16px; border: none; border-radius: 10px;
+    cursor: pointer; font-size: 14px; font-weight: 600;
+    background: transparent; color: #666;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: #2d2d5c; color: #fff;
+  }
+  .tab:hover:not(.active) { color: #999; }
+
+  /* Stats Bar */
+  .stats {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; font-size: 13px; color: #999;
+  }
+  .stats .score { color: #00b894; font-weight: 700; }
+  .stat-right { display: flex; gap: 16px; }
+
+  /* Progress Bar */
+  .progress-container { margin-bottom: 20px; }
+  .progress-bar {
+    height: 6px; background: #1a1a2e; border-radius: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; width: 0%; border-radius: 3px;
+    background: linear-gradient(90deg, #00b894, #00cec9);
+    transition: width 0.4s ease;
+  }
+  .progress-label {
+    display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 4px;
+  }
+
+  /* Card */
+  .card {
+    background: #1a1a2e; border-radius: 16px; padding: 24px;
+    border: 1px solid #2d2d4a;
+    min-height: 320px;
+    display: flex; flex-direction: column;
+  }
+
+  /* Vowel Mode Styles */
+  .sentence-box {
+    font-size: 18px; line-height: 1.7; margin-bottom: 20px;
+    padding: 16px; background: #14142a; border-radius: 10px;
+  }
+  .sentence-box .kanji-display {
+    color: #ff6b6b; font-weight: 700; text-decoration: underline;
+    text-decoration-color: #ff6b6b; text-underline-offset: 3px;
+  }
+  .input-area { margin-bottom: 16px; }
+  .input-area label { font-size: 13px; color: #888; display: block; margin-bottom: 6px; }
+  .kana-input {
+    width: 100%; padding: 14px 16px; font-size: 20px;
+    background: #14142a; border: 2px solid #2d2d4a; border-radius: 10px;
+    color: #fff; outline: none; font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .kana-input:focus { border-color: #6c5ce7; }
+  .kana-input.correct { border-color: #00b894; background: #0a2e22; }
+  .kana-input.wrong { border-color: #ff6b6b; background: #2e1414; animation: shake 0.3s; }
+  .hint-text { font-size: 13px; color: #636e72; margin-top: 8px; }
+  .feedback {
+    padding: 14px 16px; border-radius: 10px; margin-top: 12px;
+    font-size: 14px; line-height: 1.6; display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.correct { background: #0a2e22; border: 1px solid #00b894; color: #81ecec; }
+  .feedback.wrong { background: #2e1414; border: 1px solid #ff6b6b; color: #fab1a0; }
+  .feedback .highlight-diff {
+    background: #ff6b6b33; padding: 2px 6px; border-radius: 4px;
+    font-weight: 700; color: #ff6b6b;
+  }
+  .feedback .highlight-correct {
+    background: #00b89433; padding: 2px 6px; border-radius: 4px;
+    font-weight: 700; color: #00b894;
+  }
+
+  /* Look-alike Mode Styles */
+  .prompt-box {
+    font-size: 16px; margin-bottom: 16px;
+    padding: 14px; background: #14142a; border-radius: 10px;
+    text-align: center;
+  }
+  .prompt-box .kana-reading {
+    color: #fdcb6e; font-weight: 700; font-size: 20px;
+  }
+  .grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 16px;
+  }
+  .grid-item {
+    padding: 20px 12px; font-size: 28px; font-weight: 700;
+    background: #14142a; border: 2px solid #2d2d4a; border-radius: 12px;
+    cursor: pointer; text-align: center;
+    transition: all 0.2s;
+  }
+  .grid-item:hover { border-color: #6c5ce7; background: #1e1e3a; }
+  .grid-item.selected-correct {
+    border-color: #00b894; background: #0a2e22;
+    animation: pop 0.3s ease;
+  }
+  .grid-item.selected-wrong {
+    border-color: #ff6b6b; background: #2e1414;
+    animation: shake 0.3s;
+  }
+  .grid-item.reveal-correct {
+    border-color: #00b894; background: #0a2e22;
+  }
+  .grid-item.disabled { pointer-events: none; opacity: 0.7; }
+
+  /* Explanation Detail */
+  .explanation-detail {
+    margin-top: 12px; padding: 14px; border-radius: 10px;
+    background: #14142a; border: 1px solid #2d2d4a;
+    display: none;
+  }
+  .explanation-detail.show { display: block; }
+  .explanation-detail h4 { font-size: 14px; margin-bottom: 8px; color: #fdcb6e; }
+  .explanation-detail .diff-row {
+    display: flex; align-items: center; gap: 12px; padding: 6px 0;
+    border-bottom: 1px solid #222;
+    font-size: 14px;
+  }
+  .explanation-detail .diff-row:last-child { border: none; }
+  .diff-kanji { font-size: 22px; font-weight: 700; min-width: 48px; }
+  .diff-kanji.ok { color: #00b894; }
+  .diff-kanji.bad { color: #ff6b6b; }
+  .diff-desc { color: #999; font-size: 13px; line-height: 1.4; }
+
+  /* Next Button */
+  .next-btn {
+    width: 100%; padding: 14px; margin-top: 16px;
+    font-size: 16px; font-weight: 600;
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    color: #fff; border: none; border-radius: 10px;
+    cursor: pointer; opacity: 0; transition: opacity 0.3s;
+    display: none;
+  }
+  .next-btn.show { display: block; opacity: 1; }
+  .next-btn:hover { filter: brightness(1.1); }
+
+  /* Animations */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  /* Mode indicator */
+  .mode-badge {
+    display: inline-block; padding: 4px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .mode-badge.vowel { background: #6c5ce7; color: #fff; }
+  .mode-badge.lookalike { background: #e17055; color: #fff; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 40px 0; color: #666;
+  }
+  .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: #999; }
+
+  /* Responsive */
+  @media (max-width: 500px) {
+    .app { padding: 12px; }
+    .header h1 { font-size: 18px; }
+    .card { padding: 16px; }
+    .sentence-box { font-size: 16px; }
+    .grid { gap: 8px; }
+    .grid-item { font-size: 22px; padding: 14px 8px; }
+    .stats { flex-direction: column; gap: 4px; align-items: flex-start; }
+    .stat-right { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="header">
+    <h1>🏯 JLPT N3 Kanji Trainer</h1>
+    <p>Master short/long vowels & look-alike Kanji</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-mode="vowel" onclick="switchMode('vowel')">🎹 Vowel Trainer</button>
+    <button class="tab" data-mode="lookalike" onclick="switchMode('lookalike')">👁️ Kanji Lookalike</button>
+  </div>
+
+  <div class="stats" id="stats">
+    <div>Score: <span class="score" id="scoreText">0</span> / <span id="totalText">0</span></div>
+    <div class="stat-right">
+      <span>Streak: <span id="streakText">0</span>🔥</span>
+      <span>Accuracy: <span id="accuracyText">0</span>%</span>
+    </div>
+  </div>
+
+  <div class="progress-container">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-label">
+      <span id="progressCurrent">0</span>
+      <span id="progressTotal">0</span>
+    </div>
+  </div>
+
+  <div class="card" id="card">
+    <!-- Content rendered by JS -->
+  </div>
+</div>
+
+<script>
+// ====== DATA ======
+let DATA = null;
+const STATE = {
+  mode: 'vowel',
+  questions: [],
+  index: 0,
+  score: 0,
+  streak: 0,
+  totalAnswered: 0,
+  correctCount: 0,
+  answered: false,
+  shuffled: false,
+};
+
+// ====== INIT ======
+async function init() {
+  try {
+    const res = await fetch('questions.json');
+    DATA = await res.json();
+  } catch(e) {
+    document.getElementById('card').innerHTML = `
+      <div class="empty-state">
+        <h3>⚠️ Could not load questions.json</h3>
+        <p>Make sure the file is in the same folder as index.html.</p>
+      </div>`;
+    return;
+  }
+  startNewSession();
+}
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startNewSession() {
+  STATE.index = 0;
+  STATE.score = 0;
+  STATE.streak = 0;
+  STATE.totalAnswered = 0;
+  STATE.correctCount = 0;
+  STATE.answered = false;
+
+  const pool = STATE.mode === 'vowel' ? [...DATA.vowel_drills] : [...DATA.look_alike_drills];
+  STATE.questions = shuffle(pool);
+  renderQuestion();
+}
+
+// ====== MODE SWITCH ======
+function switchMode(mode) {
+  STATE.mode = mode;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+  startNewSession();
+}
+
+// ====== RENDER ======
+function renderQuestion() {
+  STATE.answered = false;
+  const card = document.getElementById('card');
+  const q = STATE.questions[STATE.index];
+  if (!q) {
+    card.innerHTML = `<div class="empty-state"><h3>🎉 All questions completed!</h3><p>Great job! Click below to start a new session.</p></div>`;
+    return;
+  }
+
+  const modeBadge = STATE.mode === 'vowel'
+    ? '<span class="mode-badge vowel">🎹 Vowel Length</span>'
+    : '<span class="mode-badge lookalike">👁️ Kanji Lookalike</span>';
+
+  if (STATE.mode === 'vowel') {
+    renderVowel(card, q, modeBadge);
+  } else {
+    renderLookalike(card, q, modeBadge);
+  }
+  updateStats();
+}
+
+function renderVowel(card, q, badge) {
+  const sentence = q.sentence.replace('{{target}}', `<span class="kanji-display">${q.kanji}</span>`);
+  const idx = STATE.index;
+  const total = STATE.questions.length;
+  card.innerHTML = `
+    ${badge}
+    <div class="sentence-box">${sentence}</div>
+    <div class="input-area">
+      <label>Type the hiragana reading:</label>
+      <input type="text" class="kana-input" id="kanaInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        placeholder="e.g. じょうきょう" data-idx="${idx}">
+      <div class="hint-text">💡 ${q.english_hint}</div>
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next →</button>
+  `;
+
+  const input = document.getElementById('kanaInput');
+  input.focus();
+  input.addEventListener('input', function() { checkVowelInput(this, q); });
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && STATE.answered) {
+      nextQuestion();
+    }
+  });
+}
+
+function checkVowelInput(input, q) {
+  if (STATE.answered) return;
+  const val = input.value.trim();
+  const target = q.correct_kana;
+  const feedback = document.getElementById('feedback');
+
+  // Allow partial typing - don't validate until user stops or types enough
+  // But if it's an exact match, accept it
+  if (val === target) {
+    STATE.answered = true;
+    input.classList.remove('wrong');
+    input.classList.add('correct');
+    input.disabled = true;
+    STATE.score++;
+    STATE.streak++;
+    STATE.correctCount++;
+    feedback.className = 'feedback show correct';
+    feedback.innerHTML = `<strong>✅ Correct!</strong> ${target} is the right reading. ${q.english_hint ? '<br><small>(' + q.english_hint + ')</small>' : ''}`;
+    document.getElementById('nextBtn').classList.add('show');
+    updateStats();
+    return;
+  }
+
+  // Check if the input matches any known trap
+  if (q.traps && q.traps.includes(val) && val.length >= target.length) {
+    STATE.answered = true;
+    STATE.streak = 0;
+    input.classList.remove('correct');
+    input.classList.add('wrong');
+    input.disabled = true;
+    feedback.className = 'feedback show wrong';
+    // Highlight the difference
+    let diffHtml = `<strong>❌ Wrong!</strong> You typed: <span class="highlight-diff">${val}</span><br>`;
+    diffHtml += `Correct reading: <span class="highlight-correct">${target}</span><br>`;
+    diffHtml += `<small>Tip: Pay attention to vowel length (long う vs short). The correct reading has no extra or missing sounds.</small>`;
+    feedback.innerHTML = diffHtml;
+    document.getElementById('nextBtn').classList.add('show');
+    updateStats();
+    return;
+  }
+
+  // If they've typed more characters than the target, it's wrong
+  if (val.length > target.length + 1) {
+    STATE.answered = true;
+    STATE.streak = 0;
+    input.classList.remove('correct');
+    input.classList.add('wrong');
+    input.disabled = true;
+    feedback.className = 'feedback show wrong';
+    feedback.innerHTML = `<strong>❌ Too long!</strong> You typed: <span class="highlight-diff">${val}</span><br>Correct: <span class="highlight-correct">${target}</span>`;
+    document.getElementById('nextBtn').classList.add('show');
+    updateStats();
+    return;
+  }
+
+  // Real-time character highlighting while typing
+  feedback.className = 'feedback';
+  feedback.style.display = 'none';
+  input.classList.remove('correct', 'wrong');
+}
+
+function renderLookalike(card, q, badge) {
+  const allItems = [q.correct_kanji, ...q.imposters.map(i => i.kanji)];
+  const shuffledItems = shuffle([...allItems]);
+  const total = STATE.questions.length;
+
+  card.innerHTML = `
+    ${badge}
+    <div class="prompt-box">
+      Find the correct Kanji for<br>
+      <span class="kana-reading">${q.target_kana}</span>
+      <br><small style="color:#888">"${q.english_meaning}"</small>
+    </div>
+    <div class="grid" id="grid">
+      ${shuffledItems.map((kanji, i) => `<div class="grid-item" data-kanji="${kanji}" data-idx="${i}" onclick="selectLookalike(this, '${kanji}', '${i}')">${kanji}</div>`).join('')}
+    </div>
+    <div class="explanation-detail" id="explanationDetail"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next →</button>
+  `;
+
+  // Add Enter key listener for look-alike mode too
+  document.addEventListener('keydown', function lookalikeEnter(e) {
+    if (e.key === 'Enter' && STATE.answered) {
+      document.removeEventListener('keydown', lookalikeEnter);
+      nextQuestion();
+    }
+  });
+}
+
+function selectLookalike(el, selectedKanji, idxStr) {
+  if (STATE.answered) return;
+  const q = STATE.questions[STATE.index];
+  const isCorrect = selectedKanji === q.correct_kanji;
+  const allItems = document.querySelectorAll('.grid-item');
+
+  STATE.answered = true;
+  STATE.totalAnswered++;
+  allItems.forEach(item => item.classList.add('disabled'));
+
+  if (isCorrect) {
+    STATE.score++;
+    STATE.streak++;
+    STATE.correctCount++;
+    el.classList.add('selected-correct');
+  } else {
+    STATE.streak = 0;
+    el.classList.add('selected-wrong');
+    // Reveal correct answer
+    allItems.forEach(item => {
+      if (item.dataset.kanji === q.correct_kanji) {
+        item.classList.add('reveal-correct');
+      }
+    });
+  }
+
+  // Build explanation
+  const detail = document.getElementById('explanationDetail');
+  let html = `<h4>${isCorrect ? '✅ Correct!' : '❌ Wrong!'} — Detailed Comparison</h4>`;
+
+  // Correct kanji first
+  html += `<div class="diff-row"><span class="diff-kanji ok">${q.correct_kanji}</span><span class="diff-desc"><strong>Correct ✓</strong> Reading: ${q.target_kana} — "${q.english_meaning}"</span></div>`;
+
+  // Imposters
+  q.imposters.forEach(imp => {
+    const isSelected = imp.kanji === selectedKanji;
+    html += `<div class="diff-row">
+      <span class="diff-kanji ${isSelected && !isCorrect ? 'bad' : ''}">${imp.kanji}</span>
+      <span class="diff-desc">${isSelected && !isCorrect ? '← <strong>You chose this</strong>. ' : ''}${imp.reason}</span>
+    </div>`;
+  });
+
+  detail.innerHTML = html;
+  detail.classList.add('show');
+
+  document.getElementById('nextBtn').classList.add('show');
+  updateStats();
+}
+
+// ====== NAVIGATION ======
+function nextQuestion() {
+  STATE.index++;
+  if (STATE.index >= STATE.questions.length) {
+    const card = document.getElementById('card');
+    const pct = STATE.totalAnswered > 0 ? Math.round(STATE.correctCount / STATE.totalAnswered * 100) : 0;
+    card.innerHTML = `
+      <div class="empty-state">
+        <h3>🎉 Session Complete!</h3>
+        <p>Score: ${STATE.score}/${STATE.totalAnswered}</p>
+        <p>Accuracy: ${pct}%</p>
+        <p style="margin-top:16px">Click the mode tabs above to practice more!</p>
+      </div>
+      <button class="next-btn show" onclick="startNewSession()">🔄 Start New Round</button>
+    `;
+    return;
+  }
+  renderQuestion();
+}
+
+// ====== STATS ======
+function updateStats() {
+  const total = STATE.totalAnswered;
+  const correct = STATE.correctCount;
+  const accuracy = total > 0 ? Math.round(correct / total * 100) : 0;
+  const totalQ = STATE.questions.length;
+
+  document.getElementById('scoreText').textContent = STATE.score;
+  document.getElementById('totalText').textContent = total;
+  document.getElementById('streakText').textContent = STATE.streak;
+  document.getElementById('accuracyText').textContent = accuracy;
+
+  const pct = totalQ > 0 ? Math.round(STATE.index / totalQ * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressCurrent').textContent = Math.min(STATE.index + 1, totalQ);
+  document.getElementById('progressTotal').textContent = totalQ;
+}
+
+// ====== BOOT ======
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
