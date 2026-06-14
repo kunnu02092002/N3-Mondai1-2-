@@ -353,11 +353,6 @@ function renderVowel(card, q, badge) {
   const input = document.getElementById('kanaInput');
   input.focus();
   input.addEventListener('input', function() { checkVowelInput(this, q); });
-  input.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && STATE.answered) {
-      nextQuestion();
-    }
-  });
 }
 
 function checkVowelInput(input, q) {
@@ -391,9 +386,8 @@ function checkVowelInput(input, q) {
     input.classList.add('wrong');
     input.disabled = true;
     feedback.className = 'feedback show wrong';
-    // Highlight the difference
     let diffHtml = `<strong>❌ Wrong!</strong> You typed: <span class="highlight-diff">${val}</span><br>`;
-    diffHtml += `Correct reading: <span class="highlight-correct">${target}</span><br>`;
+    diffHtml += `<strong>✅ Correct answer: <span class="highlight-correct" style="font-size:1.3em">${target}</span></strong><br>`;
     diffHtml += `<small>Tip: Pay attention to vowel length (long う vs short). The correct reading has no extra or missing sounds.</small>`;
     feedback.innerHTML = diffHtml;
     document.getElementById('nextBtn').classList.add('show');
@@ -409,7 +403,7 @@ function checkVowelInput(input, q) {
     input.classList.add('wrong');
     input.disabled = true;
     feedback.className = 'feedback show wrong';
-    feedback.innerHTML = `<strong>❌ Too long!</strong> You typed: <span class="highlight-diff">${val}</span><br>Correct: <span class="highlight-correct">${target}</span>`;
+    feedback.innerHTML = `<strong>❌ Too long!</strong> You typed: <span class="highlight-diff">${val}</span><br><strong>✅ Correct answer: <span class="highlight-correct" style="font-size:1.3em">${target}</span></strong>`;
     document.getElementById('nextBtn').classList.add('show');
     updateStats();
     return;
@@ -439,14 +433,6 @@ function renderLookalike(card, q, badge) {
     <div class="explanation-detail" id="explanationDetail"></div>
     <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next →</button>
   `;
-
-  // Add Enter key listener for look-alike mode too
-  document.addEventListener('keydown', function lookalikeEnter(e) {
-    if (e.key === 'Enter' && STATE.answered) {
-      document.removeEventListener('keydown', lookalikeEnter);
-      nextQuestion();
-    }
-  });
 }
 
 function selectLookalike(el, selectedKanji, idxStr) {
@@ -497,6 +483,14 @@ function selectLookalike(el, selectedKanji, idxStr) {
   document.getElementById('nextBtn').classList.add('show');
   updateStats();
 }
+
+// ====== GLOBAL ENTER LISTENER ======
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && STATE.answered) {
+    e.preventDefault();
+    nextQuestion();
+  }
+});
 
 // ====== NAVIGATION ======
 function nextQuestion() {
