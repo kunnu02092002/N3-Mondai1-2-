@@ -347,6 +347,10 @@ function renderVowel(card, q, badge) {
       <div class="hint-text">💡 ${q.english_hint}</div>
     </div>
     <div class="feedback" id="feedback"></div>
+    <div class="answer-reveal" id="answerReveal">
+      <div class="label">✅ Correct answer</div>
+      <div class="answer-text"><span class="highlight-correct" id="answerText">—</span></div>
+    </div>
     <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next →</button>
   `;
 
@@ -360,9 +364,24 @@ function checkVowelInput(input, q) {
   const val = input.value.trim();
   const target = q.correct_kana;
   const feedback = document.getElementById('feedback');
+  const reveal = document.getElementById('answerReveal');
+  const answerText = document.getElementById('answerText');
 
-  // Allow partial typing - don't validate until user stops or types enough
-  // But if it's an exact match, accept it
+  function showAnswer(wrongVal) {
+    STATE.answered = true;
+    input.classList.remove('wrong');
+    input.classList.add('wrong');
+    input.disabled = true;
+    feedback.className = 'feedback show wrong';
+    let html = `<strong>❌ Wrong!</strong> You typed: <span class="highlight-diff">${wrongVal || val}</span>`;
+    feedback.innerHTML = html;
+    // Show dedicated answer box
+    answerText.textContent = target;
+    reveal.classList.add('show');
+    document.getElementById('nextBtn').classList.add('show');
+    updateStats();
+  }
+
   if (val === target) {
     STATE.answered = true;
     input.classList.remove('wrong');
@@ -372,7 +391,7 @@ function checkVowelInput(input, q) {
     STATE.streak++;
     STATE.correctCount++;
     feedback.className = 'feedback show correct';
-    feedback.innerHTML = `<strong>✅ Correct!</strong> ${target} is the right reading. ${q.english_hint ? '<br><small>(' + q.english_hint + ')</small>' : ''}`;
+    feedback.innerHTML = `<strong>✅ Correct! — ${target}</strong>`;
     document.getElementById('nextBtn').classList.add('show');
     updateStats();
     return;
@@ -380,36 +399,20 @@ function checkVowelInput(input, q) {
 
   // Check if the input matches any known trap
   if (q.traps && q.traps.includes(val) && val.length >= target.length) {
-    STATE.answered = true;
     STATE.streak = 0;
-    input.classList.remove('correct');
-    input.classList.add('wrong');
-    input.disabled = true;
-    feedback.className = 'feedback show wrong';
-    let diffHtml = `<strong>❌ Wrong!</strong> You typed: <span class="highlight-diff">${val}</span><br>`;
-    diffHtml += `<strong>✅ Correct answer: <span class="highlight-correct" style="font-size:1.3em">${target}</span></strong><br>`;
-    diffHtml += `<small>Tip: Pay attention to vowel length (long う vs short). The correct reading has no extra or missing sounds.</small>`;
-    feedback.innerHTML = diffHtml;
-    document.getElementById('nextBtn').classList.add('show');
-    updateStats();
+    showAnswer(val);
     return;
   }
 
   // If they've typed more characters than the target, it's wrong
   if (val.length > target.length + 1) {
-    STATE.answered = true;
     STATE.streak = 0;
-    input.classList.remove('correct');
-    input.classList.add('wrong');
-    input.disabled = true;
-    feedback.className = 'feedback show wrong';
-    feedback.innerHTML = `<strong>❌ Too long!</strong> You typed: <span class="highlight-diff">${val}</span><br><strong>✅ Correct answer: <span class="highlight-correct" style="font-size:1.3em">${target}</span></strong>`;
-    document.getElementById('nextBtn').classList.add('show');
-    updateStats();
+    showAnswer(val);
     return;
   }
 
-  // Real-time character highlighting while typing
+  // Real-time — hide reveal/feedback while typing
+  reveal.classList.remove('show');
   feedback.className = 'feedback';
   feedback.style.display = 'none';
   input.classList.remove('correct', 'wrong');
